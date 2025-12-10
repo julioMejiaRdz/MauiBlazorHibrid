@@ -1,0 +1,71 @@
+@page "/docclientes"
+@using MauiBlazorHibrid.Data
+@using MauiBlazorHibrid.Models
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+
+<h3>Documentos de Clientes</h3>
+
+@if (documentos == null)
+{
+    <p><em>Cargando datos...</em></p>
+}
+else if (!documentos.Any())
+{
+    <p><em>No se encontraron registros.</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>PLU Doc</th>
+                <th>Item</th>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th>Cantidad</th>
+                <th>Unitario</th>
+                <th>Lista</th>
+                <th>Descuento</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var doc in documentos)
+            {
+                <tr>
+                    <td>@doc.Pludocclientes</td>
+                    <td>@doc.Item</td>
+                    <td>@doc.Codigo</td>
+                    <td>@doc.Descripcion1</td>
+                    <td>@doc.Cantidad</td>
+                    <td>@doc.Unitario?.ToString("C")</td>
+                    <td>@doc.Lista?.ToString("C")</td>
+                    <td>@doc.Descuento?.ToString("P")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <p>Total de registros: <strong>@documentos.Count</strong></p>
+}
+
+@code {
+    private List<Docclientesd>? documentos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Obtener los primeros 100 registros
+            documentos = await DbContext.Docclientesds
+                .Take(100)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            // Manejar el error
+            Console.WriteLine($"Error al cargar datos: {ex.Message}");
+            documentos = new List<Docclientesd>();
+        }
+    }
+}

@@ -18,3 +18,11 @@ x86/
 # MAUI específico
 **/bin/
 **/obj/
+CLAUDE.md
+
+# Configuration files with sensitive data
+appsettings.json
+appsettings.Development.json
+appsettings.Production.json
+appsettings.*.json
+!appsettings.template.json
