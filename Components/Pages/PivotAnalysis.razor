@@ -1,0 +1,504 @@
+@page "/pivot"
+@using System.Globalization
+@using MauiBlazorHibrid.Services
+@using MauiBlazorHibrid.Models
+@inject IVentasService VentasService
+@inject NotificationService NotificationService
+
+
+<RadzenStack class="rz-p-0 rz-p-md-6 rz-p-lg-12">
+    <RadzenCard Variant="Variant.Outlined">
+        <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
+            <RadzenText TextStyle="TextStyle.H4" TagName="TagName.H1">Pivot de Ventas</RadzenText>
+
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap" Gap="1rem">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenLabel Text="Fecha Inicio:" />
+                    <RadzenDatePicker @bind-Value="@fechaInicio" DateFormat="dd/MM/yyyy" />
+                </RadzenStack>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenLabel Text="Fecha Fin:" />
+                    <RadzenDatePicker @bind-Value="@fechaFin" DateFormat="dd/MM/yyyy" />
+                </RadzenStack>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenLabel Text="Agrupación Temporal:" />
+                    <RadzenDropDown @bind-Value="@agrupacionTemporal" Data="@agrupacionesTemporales" Style="width: 120px;" Change="@OnAgrupacionChanged" />
+                </RadzenStack>
+                <RadzenButton Text="Cargar Datos" Click="@CargarDatos" ButtonStyle="ButtonStyle.Primary" Icon="refresh" />
+            </RadzenStack>
+
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap" Gap="1rem">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenCheckBox @bind-Value="@mostrarDepartamento" Name="cbDepartamento" TValue="bool"></RadzenCheckBox>
+                    <RadzenLabel Text="Agrupar por Departamento" Component="cbDepartamento" />
+                </RadzenStack>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenCheckBox @bind-Value="@mostrarFabricante" Name="cbFabricante" TValue="bool"></RadzenCheckBox>
+                    <RadzenLabel Text="Agrupar por Fabricante" Component="cbFabricante" />
+                </RadzenStack>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenCheckBox @bind-Value="@mostrarCategoria" Name="cbCategoria" TValue="bool"></RadzenCheckBox>
+                    <RadzenLabel Text="Agrupar por Categoría" Component="cbCategoria" />
+                </RadzenStack>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenCheckBox @bind-Value="@mostrarCliente" Name="cbCliente" TValue="bool"></RadzenCheckBox>
+                    <RadzenLabel Text="Agrupar por Cliente" Component="cbCliente" />
+                </RadzenStack>
+            </RadzenStack>
+
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap" Gap="1rem">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenCheckBox @bind-Value="@mostrarGrafico" Name="cbGrafico" TValue="bool"></RadzenCheckBox>
+                    <RadzenLabel Text="Mostrar Gráfico" Component="cbGrafico" />
+                </RadzenStack>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenLabel Text="Tipo de Gráfico:" />
+                    <RadzenDropDown @bind-Value="@tipoGrafico" Data="@tiposGrafico" Style="width: 150px;" Disabled="@(!mostrarGrafico)" />
+                </RadzenStack>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenCheckBox @bind-Value="@showDataLabels" Name="dataLabels" TValue="bool" Disabled="@(!mostrarGrafico)"></RadzenCheckBox>
+                    <RadzenLabel Text="Etiquetas de Datos" Component="dataLabels" />
+                </RadzenStack>
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenCard>
+
+    @if (!string.IsNullOrEmpty(mensajeError))
+    {
+        <RadzenCard>
+            <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter">
+                @mensajeError
+            </RadzenAlert>
+        </RadzenCard>
+    }
+
+    @if (cargando)
+    {
+        <RadzenCard>
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                <RadzenProgressBarCircular ProgressBarStyle="ProgressBarStyle.Primary" Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+                <RadzenText>Cargando datos...</RadzenText>
+            </RadzenStack>
+        </RadzenCard>
+    }
+    else if (datosVentas == null || !datosVentas.Any())
+    {
+        <RadzenCard>
+            <RadzenText TextStyle="TextStyle.Body1">No hay datos disponibles. Seleccione un rango de fechas y haga clic en "Cargar Datos".</RadzenText>
+        </RadzenCard>
+    }
+    else
+    {
+        @if (mostrarGrafico && datosAgrupados != null && datosAgrupados.Any())
+        {
+            <RadzenCard>
+                <RadzenText TextStyle="TextStyle.H5" class="rz-mb-4">Gráfico de Ventas por @agrupacionTemporal</RadzenText>
+
+                @if (tipoGrafico == "Líneas")
+                {
+                    <RadzenChart>
+                        <RadzenLineSeries Data="@datosAgrupados" CategoryProperty="Fecha" Title="Ventas" LineType="LineType.Solid" ValueProperty="TotalVentas">
+                            <RadzenMarkers Visible="true" MarkerType="MarkerType.Circle" />
+                            <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                        </RadzenLineSeries>
+                        <RadzenLineSeries Data="@datosAgrupados" CategoryProperty="Fecha" Title="Costos" LineType="LineType.Dashed" ValueProperty="TotalCostos">
+                            <RadzenMarkers Visible="true" MarkerType="MarkerType.Square" />
+                            <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                        </RadzenLineSeries>
+                        <RadzenLineSeries Data="@datosAgrupados" CategoryProperty="Fecha" Title="Utilidad" LineType="LineType.Solid" ValueProperty="TotalUtilidad">
+                            <RadzenMarkers Visible="true" MarkerType="MarkerType.Diamond" />
+                            <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                        </RadzenLineSeries>
+                        <RadzenCategoryAxis Padding="20" />
+                        <RadzenValueAxis Formatter="@FormatAsUSD">
+                            <RadzenGridLines Visible="true" />
+                            <RadzenAxisTitle Text="Monto en USD" />
+                        </RadzenValueAxis>
+                    </RadzenChart>
+                }
+                else if (tipoGrafico == "Área")
+                {
+                    <RadzenChart>
+                        <RadzenAreaSeries Data="@datosAgrupados" CategoryProperty="Fecha" Title="Ventas" ValueProperty="TotalVentas">
+                            <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                        </RadzenAreaSeries>
+                        <RadzenAreaSeries Data="@datosAgrupados" CategoryProperty="Fecha" Title="Costos" ValueProperty="TotalCostos">
+                            <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                        </RadzenAreaSeries>
+                        <RadzenAreaSeries Data="@datosAgrupados" CategoryProperty="Fecha" Title="Utilidad" ValueProperty="TotalUtilidad">
+                            <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                        </RadzenAreaSeries>
+                        <RadzenCategoryAxis Padding="20" />
+                        <RadzenValueAxis Formatter="@FormatAsUSD">
+                            <RadzenGridLines Visible="true" />
+                            <RadzenAxisTitle Text="Monto en USD" />
+                        </RadzenValueAxis>
+                    </RadzenChart>
+                }
+                else if (tipoGrafico == "Columnas")
+                {
+                    <RadzenChart>
+                        <RadzenColumnSeries Data="@datosAgrupados" CategoryProperty="Fecha" Title="Ventas" ValueProperty="TotalVentas">
+                            <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                        </RadzenColumnSeries>
+                        <RadzenColumnSeries Data="@datosAgrupados" CategoryProperty="Fecha" Title="Costos" ValueProperty="TotalCostos">
+                            <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                        </RadzenColumnSeries>
+                        <RadzenColumnSeries Data="@datosAgrupados" CategoryProperty="Fecha" Title="Utilidad" ValueProperty="TotalUtilidad">
+                            <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                        </RadzenColumnSeries>
+                        <RadzenCategoryAxis Padding="20" />
+                        <RadzenValueAxis Formatter="@FormatAsUSD">
+                            <RadzenGridLines Visible="true" />
+                            <RadzenAxisTitle Text="Monto en USD" />
+                        </RadzenValueAxis>
+                    </RadzenChart>
+                }
+                else if (tipoGrafico == "Barras")
+                {
+                    <RadzenChart>
+                        <RadzenBarSeries Data="@datosAgrupados" CategoryProperty="Fecha" Title="Ventas" ValueProperty="TotalVentas">
+                            <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                        </RadzenBarSeries>
+                        <RadzenBarSeries Data="@datosAgrupados" CategoryProperty="Fecha" Title="Costos" ValueProperty="TotalCostos">
+                            <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                        </RadzenBarSeries>
+                        <RadzenBarSeries Data="@datosAgrupados" CategoryProperty="Fecha" Title="Utilidad" ValueProperty="TotalUtilidad">
+                            <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                        </RadzenBarSeries>
+                        <RadzenValueAxis Formatter="@FormatAsUSD">
+                            <RadzenGridLines Visible="true" />
+                            <RadzenAxisTitle Text="Monto en USD" />
+                        </RadzenValueAxis>
+                        <RadzenCategoryAxis Padding="20" />
+                    </RadzenChart>
+                }
+            </RadzenCard>
+        }
+
+        <RadzenCard>
+            <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                    <RadzenText TextStyle="TextStyle.H6">Total de Registros: @datosVentas.Count</RadzenText>
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                        <RadzenLabel Text="Filtrar:" />
+                        <RadzenTextBox @bind-Value="@filtroTexto" Placeholder="Buscar..." Style="width: 300px;"
+                                      @oninput="@(args => FiltrarDatos(args.Value?.ToString()))" />
+                    </RadzenStack>
+                </RadzenStack>
+
+                <RadzenDataGrid @ref="grid"
+                               Data="@datosFiltrados"
+                               TItem="VentasDatos"
+                               AllowFiltering="true"
+                               AllowColumnResize="true"
+                               AllowSorting="true"
+                               AllowPaging="true"
+                               PageSize="50"
+                               AllowGrouping="true"
+                               AllowColumnPicking="true"
+                               AllowColumnReorder="true"
+                               ShowGroupedColumn="false"
+                               GroupRowRender="OnGroupRowRender"
+                               Density="Density.Compact"
+                               Style="height: 600px;">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="VentasDatos" Property="FECHA" Title="Fecha" Width="110px" Frozen="true">
+                            <Template Context="data">
+                                @data.FECHA.ToString("dd/MMM/yyyy")
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="VentasDatos" Property="DOCNUM" Title="Doc #" Width="100px" />
+
+                        @if (mostrarDepartamento)
+                        {
+                            <RadzenDataGridColumn TItem="VentasDatos" Property="DEPARTAMENTO" Title="Departamento" Width="150px" Groupable="true" />
+                        }
+
+                        @if (mostrarFabricante)
+                        {
+                            <RadzenDataGridColumn TItem="VentasDatos" Property="FABRICANTES" Title="Fabricante" Width="180px" Groupable="true" />
+                        }
+
+                        @if (mostrarCategoria)
+                        {
+                            <RadzenDataGridColumn TItem="VentasDatos" Property="CATEGORIA" Title="Categoría" Width="150px" Groupable="true" />
+                        }
+
+                        @if (mostrarCliente)
+                        {
+                            <RadzenDataGridColumn TItem="VentasDatos" Property="CLIENTE" Title="Cliente" Width="200px" Groupable="true" />
+                        }
+
+                        <RadzenDataGridColumn TItem="VentasDatos" Property="PRODFAMILIA" Title="Familia Producto" Width="150px" Groupable="true" />
+                        <RadzenDataGridColumn TItem="VentasDatos" Property="CODIGO" Title="Código" Width="120px" />
+                        <RadzenDataGridColumn TItem="VentasDatos" Property="DESCRIPCION" Title="Descripción" Width="250px" />
+                        <RadzenDataGridColumn TItem="VentasDatos" Property="RUBRO" Title="Rubro" Width="120px" Groupable="true" />
+                        <RadzenDataGridColumn TItem="VentasDatos" Property="SECTOR_CLIENTE" Title="Sector Cliente" Width="150px" Groupable="true" />
+                        <RadzenDataGridColumn TItem="VentasDatos" Property="REPRESENTANTE" Title="Representante" Width="180px" Groupable="true" />
+                        <RadzenDataGridColumn TItem="VentasDatos" Property="USUARIO" Title="Usuario" Width="120px" />
+
+                        <RadzenDataGridColumn TItem="VentasDatos" Property="CANTIDADES" Title="Cantidad" Width="100px" TextAlign="TextAlign.Right">
+                            <Template Context="data">
+                                @data.CANTIDADES.ToString("N2")
+                            </Template>
+                            <FooterTemplate>
+                                <strong>@FormatNumber(datosVentas?.Sum(v => v.CANTIDADES) ?? 0)</strong>
+                            </FooterTemplate>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="VentasDatos" Property="VENTA" Title="Ventas" Width="130px" TextAlign="TextAlign.Right">
+                            <Template Context="data">
+                                @FormatAsUSD(data.VENTA)
+                            </Template>
+                            <FooterTemplate>
+                                <strong>@FormatAsUSD(datosVentas?.Sum(v => v.VENTA) ?? 0)</strong>
+                            </FooterTemplate>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="VentasDatos" Property="COSTO" Title="Costos" Width="130px" TextAlign="TextAlign.Right">
+                            <Template Context="data">
+                                @FormatAsUSD(data.COSTO)
+                            </Template>
+                            <FooterTemplate>
+                                <strong>@FormatAsUSD(datosVentas?.Sum(v => v.COSTO) ?? 0)</strong>
+                            </FooterTemplate>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="VentasDatos" Property="UTILIDAD" Title="Utilidad" Width="130px" TextAlign="TextAlign.Right">
+                            <Template Context="data">
+                                <span style="color: @(data.UTILIDAD >= 0 ? "green" : "red"); font-weight: bold;">
+                                    @FormatAsUSD(data.UTILIDAD)
+                                </span>
+                            </Template>
+                            <FooterTemplate>
+                                <strong style="color: @(datosVentas?.Sum(v => v.UTILIDAD) >= 0 ? "green" : "red")">
+                                    @FormatAsUSD(datosVentas?.Sum(v => v.UTILIDAD) ?? 0)
+                                </strong>
+                            </FooterTemplate>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="VentasDatos" Title="% Margen" Width="100px" TextAlign="TextAlign.Right" Sortable="false">
+                            <Template Context="data">
+                                @{
+                                    var margen = data.VENTA != 0 ? (data.UTILIDAD / data.VENTA * 100) : 0;
+                                }
+                                <span style="color: @(margen >= 0 ? "green" : "red");">
+                                    @margen.ToString("N1")%
+                                </span>
+                            </Template>
+                            <FooterTemplate>
+                                @{
+                                    var totalVentas = datosVentas?.Sum(v => v.VENTA) ?? 0;
+                                    var totalUtilidad = datosVentas?.Sum(v => v.UTILIDAD) ?? 0;
+                                    var margenTotal = totalVentas != 0 ? (totalUtilidad / totalVentas * 100) : 0;
+                                }
+                                <strong style="color: @(margenTotal >= 0 ? "green" : "red");">
+                                    @margenTotal.ToString("N1")%
+                                </strong>
+                            </FooterTemplate>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenStack>
+        </RadzenCard>
+    }
+</RadzenStack>
+
+@code {
+    RadzenDataGrid<VentasDatos>? grid;
+    bool cargando = false;
+
+    DateTime fechaInicio = DateTime.Now.AddMonths(-1);
+    DateTime fechaFin = DateTime.Now;
+
+    bool mostrarDepartamento = true;
+    bool mostrarFabricante = true;
+    bool mostrarCategoria = true;
+    bool mostrarCliente = false;
+
+    // Agrupación temporal y gráfico
+    string agrupacionTemporal = "Mensual";
+    List<string> agrupacionesTemporales = new List<string> { "Diaria", "Mensual", "Anual" };
+
+    bool mostrarGrafico = false;
+    bool showDataLabels = false;
+    string tipoGrafico = "Columnas";
+    List<string> tiposGrafico = new List<string> { "Líneas", "Área", "Columnas", "Barras" };
+
+    List<VentasDatos>? datosVentas;
+    IEnumerable<VentasDatos>? datosFiltrados;
+    List<VentasPorFecha>? datosAgrupados;
+    string? mensajeError;
+    string? filtroTexto;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDatos();
+    }
+
+    async Task CargarDatos()
+    {
+        try
+        {
+            cargando = true;
+            mensajeError = null;
+            StateHasChanged();
+
+            Console.WriteLine($"Cargando datos detallados desde {fechaInicio:yyyy-MM-dd} hasta {fechaFin:yyyy-MM-dd}");
+            datosVentas = await VentasService.ObtenerVentasDetalladasAsync(fechaInicio, fechaFin);
+            datosFiltrados = datosVentas;
+
+            // Agrupar datos para el gráfico
+            AgruparDatosPorPeriodo();
+            MostrarNotificacion();
+            Console.WriteLine($"Se obtuvieron {datosVentas?.Count ?? 0} registros");
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al cargar datos: {ex.Message}";
+            Console.WriteLine($"Error completo: {ex}");
+            datosVentas = new List<VentasDatos>();
+            datosFiltrados = datosVentas;
+            datosAgrupados = new List<VentasPorFecha>();
+        }
+        finally
+        {
+            cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    void AgruparDatosPorPeriodo()
+    {
+        if (datosVentas == null || !datosVentas.Any())
+        {
+            datosAgrupados = new List<VentasPorFecha>();
+            return;
+        }
+
+        // Crear la clave de agrupación dinámica basada en las dimensiones seleccionadas
+        var datosAgrupadosTemp = datosVentas.AsEnumerable();
+
+        // Agrupar por dimensiones seleccionadas + tiempo
+        var grupos = datosAgrupadosTemp.GroupBy(v => new
+        {
+            Fecha = ObtenerPeriodoTemporal(v.FECHA),
+            Departamento = mostrarDepartamento ? v.DEPARTAMENTO : null,
+            Fabricante = mostrarFabricante ? v.FABRICANTES : null,
+            Categoria = mostrarCategoria ? v.CATEGORIA : null,
+            Cliente = mostrarCliente ? v.CLIENTE : null
+        })
+        .Select(g => new
+        {
+            g.Key,
+            Etiqueta = ConstruirEtiqueta(g.Key.Fecha, g.Key.Departamento, g.Key.Fabricante, g.Key.Categoria, g.Key.Cliente),
+            TotalVentas = g.Sum(v => v.VENTA),
+            TotalCostos = g.Sum(v => v.COSTO),
+            TotalUtilidad = g.Sum(v => v.UTILIDAD),
+            TotalCantidades = g.Sum(v => v.CANTIDADES)
+        })
+        .OrderBy(g => g.Key.Fecha)
+        .ThenBy(g => g.Etiqueta);
+
+        datosAgrupados = grupos.Select(g => new VentasPorFecha
+        {
+            Fecha = g.Etiqueta,
+            TotalVentas = g.TotalVentas,
+            TotalCostos = g.TotalCostos,
+            TotalUtilidad = g.TotalUtilidad,
+            TotalCantidades = g.TotalCantidades
+        }).ToList();
+    }
+
+    string ObtenerPeriodoTemporal(DateTime fecha)
+    {
+        return agrupacionTemporal switch
+        {
+            "Diaria" => fecha.Date.ToString("dd/MMM/yyyy"),
+            "Mensual" => new DateTime(fecha.Year, fecha.Month, 1).ToString("MMM yyyy"),
+            "Anual" => fecha.Year.ToString(),
+            _ => fecha.Date.ToString("dd/MMM/yyyy")
+        };
+    }
+
+    string ConstruirEtiqueta(string periodo, string? depto, string? fabri, string? cat, string? cli)
+    {
+        var partes = new List<string> { periodo };
+
+        if (!string.IsNullOrEmpty(depto)) partes.Add(depto);
+        if (!string.IsNullOrEmpty(fabri)) partes.Add(fabri);
+        if (!string.IsNullOrEmpty(cat)) partes.Add(cat);
+        if (!string.IsNullOrEmpty(cli)) partes.Add(cli);
+
+        return string.Join(" - ", partes);
+    }
+
+    void FiltrarDatos(string? texto)
+    {
+        filtroTexto = texto;
+
+        if (string.IsNullOrWhiteSpace(texto) || datosVentas == null)
+        {
+            datosFiltrados = datosVentas;
+        }
+        else
+        {
+            var textoBusqueda = texto.ToLower();
+            datosFiltrados = datosVentas.Where(v =>
+                (v.CLIENTE?.ToLower().Contains(textoBusqueda) ?? false) ||
+                (v.DEPARTAMENTO?.ToLower().Contains(textoBusqueda) ?? false) ||
+                (v.FABRICANTES?.ToLower().Contains(textoBusqueda) ?? false) ||
+                (v.CATEGORIA?.ToLower().Contains(textoBusqueda) ?? false) ||
+                (v.DESCRIPCION?.ToLower().Contains(textoBusqueda) ?? false) ||
+                (v.CODIGO?.ToLower().Contains(textoBusqueda) ?? false) ||
+                (v.DOCNUM?.ToLower().Contains(textoBusqueda) ?? false)
+            ).ToList();
+        }
+
+        StateHasChanged();
+    }
+
+    void OnGroupRowRender(GroupRowRenderEventArgs args)
+    {
+        // Personalizar el render de las filas agrupadas
+        args.Expanded = false; // Por defecto colapsadas
+    }
+
+    void OnAgrupacionChanged(object value)
+    {
+        // Cuando cambia la agrupación, reagrupar los datos
+        if (datosVentas != null && datosVentas.Any())
+        {
+            AgruparDatosPorPeriodo();
+            StateHasChanged();
+        }
+    }
+
+    string FormatAsUSD(object value)
+    {
+        return Convert.ToDecimal(value).ToString("C0", CultureInfo.CreateSpecificCulture("en-US"));
+    }
+
+    string FormatNumber(decimal value)
+    {
+        return value.ToString("N2");
+    }
+
+    void MostrarNotificacion()
+    {
+        var message = new NotificationMessage
+        {
+            Severity = NotificationSeverity.Info,
+            Summary = "Info Click Summary",
+            Detail = "Click Me",
+            Duration = 4000,
+            ShowProgress = true,
+            CloseOnClick = true,
+            Payload = DateTime.Now
+        };
+
+        NotificationService.Notify(message);
+    }
+}

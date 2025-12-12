@@ -1,0 +1,48 @@
+﻿@page "/greeting"
+
+@if (loading)
+{
+    <div class="justify-content-evenly">
+        <p>Cargando...</p>
+        <div class="spinner-border flex" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+    
+    return;
+}
+
+<div style="padding: 2rem;">
+    <div style="background-color: @cardBackground; padding: 2rem; border-radius: 12px; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="color: @textColor;">@greeting</h3>
+        <input placeholder="Saludo" @bind="saludo" class="form-control mb-2" />
+        <button class="btn btn-outline-info" @onclick="Saludar">Saludar!</button>
+    </div>
+</div>
+<h2 style="margin-top: 2rem;">Gráfico de Ingresos</h2>
+<LineChart />
+
+@code {
+    bool loading = true;
+    private string greeting = "";
+    private string cardBackground = "white";
+    private string textColor = "black";
+    private string saludo = "";
+    private bool saludado = false;
+    protected override async Task OnInitializedAsync()
+    {
+        greeting = "Componente inicializado";
+        await Task.Delay(5000);
+        loading = false;
+
+    }
+
+    void Saludar()
+    {
+        if (string.IsNullOrWhiteSpace(saludo))
+            return;
+        greeting = saludo;
+        cardBackground = "#3498db";
+        textColor = "white";
+    }
+}

@@ -1,0 +1,211 @@
+﻿@page "/linechart"
+@using System.Globalization
+@using MauiBlazorHibrid.Services
+@using MauiBlazorHibrid.Models
+@inject IVentasService VentasService
+
+<RadzenStack class="rz-p-0 rz-p-md-6 rz-p-lg-12">
+    <RadzenCard Variant="Variant.Outlined">
+        <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap" Gap="1rem">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenLabel Text="Fecha Inicio:" />
+                    <RadzenDatePicker @bind-Value="@fechaInicio" DateFormat="dd/MM/yyyy" />
+                </RadzenStack>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenLabel Text="Fecha Fin:" />
+                    <RadzenDatePicker @bind-Value="@fechaFin" DateFormat="dd/MM/yyyy" />
+                </RadzenStack>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenLabel Text="Agrupar por:" />
+                    <RadzenDropDown @bind-Value="@agrupacion" Data="@agrupaciones" Style="width: 120px;" />
+                </RadzenStack>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenLabel Text="Tipo:" />
+                    <RadzenDropDown @bind-Value="@tipoGrafico" Data="@tiposGrafico" Style="width: 150px;" />
+                </RadzenStack>
+                <RadzenButton Text="Cargar Datos" Click="@CargarDatos" ButtonStyle="ButtonStyle.Primary" />
+            </RadzenStack>
+
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenCheckBox @bind-Value="@smooth" Name="smooth"></RadzenCheckBox>
+                    <RadzenLabel Text="Smooth" Component="smooth" />
+                </RadzenStack>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenCheckBox @bind-Value="@showDataLabels" Name="dataLabels"></RadzenCheckBox>
+                    <RadzenLabel Text="Show Data Labels" Component="dataLabels" />
+                </RadzenStack>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenCheckBox @bind-Value="@showMarkers" Name="markers"></RadzenCheckBox>
+                    <RadzenLabel Text="Show Markers" Component="markers" />
+                </RadzenStack>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenCheckBox @bind-Value="@sharedTooltip" Name="sharedToltip"></RadzenCheckBox>
+                    <RadzenLabel Text="Shared Tooltip" Component="sharedTooltip" />
+                </RadzenStack>
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenCard>
+
+    @if (!string.IsNullOrEmpty(mensajeError))
+    {
+        <RadzenCard>
+            <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter">
+                @mensajeError
+            </RadzenAlert>
+        </RadzenCard>
+    }
+
+    @if (cargando)
+    {
+        <RadzenCard>
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                <RadzenProgressBarCircular ProgressBarStyle="ProgressBarStyle.Primary" Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+                <RadzenText>Cargando datos...</RadzenText>
+            </RadzenStack>
+        </RadzenCard>
+    }
+    else if (datosVentas == null || !datosVentas.Any())
+    {
+        <RadzenCard>
+            <RadzenText TextStyle="TextStyle.Body1">No hay datos disponibles. Seleccione un rango de fechas y haga clic en "Cargar Datos".</RadzenText>
+        </RadzenCard>
+    }
+    else
+    {
+        @if (tipoGrafico == "Líneas")
+        {
+            <RadzenChart>
+                <RadzenChartTooltipOptions Shared="@sharedTooltip" />
+                <RadzenLineSeries Smooth="@smooth" Data="@datosVentas" CategoryProperty="Fecha" Title="Ventas" LineType="LineType.Solid" ValueProperty="TotalVentas">
+                    <RadzenMarkers Visible="@showMarkers" MarkerType="MarkerType.Circle" />
+                    <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                </RadzenLineSeries>
+                <RadzenLineSeries Smooth="@smooth" Data="@datosVentas" CategoryProperty="Fecha" Title="Costos" LineType="LineType.Dashed" ValueProperty="TotalCostos">
+                    <RadzenMarkers Visible="@showMarkers" MarkerType="MarkerType.Square" />
+                    <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                </RadzenLineSeries>
+                <RadzenLineSeries Smooth="@smooth" Data="@datosVentas" CategoryProperty="Fecha" Title="Utilidad" LineType="LineType.Solid" ValueProperty="TotalUtilidad">
+                    <RadzenMarkers Visible="@showMarkers" MarkerType="MarkerType.Diamond" />
+                    <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                </RadzenLineSeries>
+                <RadzenCategoryAxis Padding="20" />
+                <RadzenValueAxis Formatter="@FormatAsUSD">
+                    <RadzenGridLines Visible="true" />
+                    <RadzenAxisTitle Text="Monto en USD" />
+                </RadzenValueAxis>
+            </RadzenChart>
+        }
+        else if (tipoGrafico == "Área")
+        {
+            <RadzenChart>
+                <RadzenChartTooltipOptions Shared="@sharedTooltip" />
+                <RadzenAreaSeries Smooth="@smooth" Data="@datosVentas" CategoryProperty="Fecha" Title="Ventas" ValueProperty="TotalVentas">
+                    <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                </RadzenAreaSeries>
+                <RadzenAreaSeries Smooth="@smooth" Data="@datosVentas" CategoryProperty="Fecha" Title="Costos" ValueProperty="TotalCostos">
+                    <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                </RadzenAreaSeries>
+                <RadzenAreaSeries Smooth="@smooth" Data="@datosVentas" CategoryProperty="Fecha" Title="Utilidad" ValueProperty="TotalUtilidad">
+                    <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                </RadzenAreaSeries>
+                <RadzenCategoryAxis Padding="20" />
+                <RadzenValueAxis Formatter="@FormatAsUSD">
+                    <RadzenGridLines Visible="true" />
+                    <RadzenAxisTitle Text="Monto en USD" />
+                </RadzenValueAxis>
+            </RadzenChart>
+        }
+        else if (tipoGrafico == "Columnas")
+        {
+            <RadzenChart>
+                <RadzenChartTooltipOptions Shared="@sharedTooltip" />
+                <RadzenColumnSeries Data="@datosVentas" CategoryProperty="Fecha" Title="Ventas" ValueProperty="TotalVentas">
+                    <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                </RadzenColumnSeries>
+                <RadzenColumnSeries Data="@datosVentas" CategoryProperty="Fecha" Title="Costos" ValueProperty="TotalCostos">
+                    <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                </RadzenColumnSeries>
+                <RadzenColumnSeries Data="@datosVentas" CategoryProperty="Fecha" Title="Utilidad" ValueProperty="TotalUtilidad">
+                    <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                </RadzenColumnSeries>
+                <RadzenCategoryAxis Padding="20" />
+                <RadzenValueAxis Formatter="@FormatAsUSD">
+                    <RadzenGridLines Visible="true" />
+                    <RadzenAxisTitle Text="Monto en USD" />
+                </RadzenValueAxis>
+            </RadzenChart>
+        }
+        else if (tipoGrafico == "Barras")
+        {
+            <RadzenChart>
+                <RadzenChartTooltipOptions Shared="@sharedTooltip" />
+                <RadzenBarSeries Data="@datosVentas" CategoryProperty="Fecha" Title="Ventas" ValueProperty="TotalVentas">
+                    <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                </RadzenBarSeries>
+                <RadzenBarSeries Data="@datosVentas" CategoryProperty="Fecha" Title="Costos" ValueProperty="TotalCostos">
+                    <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                </RadzenBarSeries>
+                <RadzenBarSeries Data="@datosVentas" CategoryProperty="Fecha" Title="Utilidad" ValueProperty="TotalUtilidad">
+                    <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                </RadzenBarSeries>
+                <RadzenValueAxis Formatter="@FormatAsUSD">
+                    <RadzenGridLines Visible="true" />
+                    <RadzenAxisTitle Text="Monto en USD" />
+                </RadzenValueAxis>
+                <RadzenCategoryAxis Padding="20" />
+            </RadzenChart>
+        }
+    }
+</RadzenStack>
+
+@code {
+    bool smooth = false;
+    bool sharedTooltip = true;
+    bool showDataLabels = false;
+    bool showMarkers = true;
+    bool cargando = false;
+
+    DateTime fechaInicio = DateTime.Now.AddMonths(-1);
+    DateTime fechaFin = DateTime.Now;
+
+    string agrupacion = "mes";
+    string tipoGrafico = "Líneas";
+
+    List<string> agrupaciones = new List<string> { "dia", "semana", "mes", "año" };
+    List<string> tiposGrafico = new List<string> { "Líneas", "Área", "Columnas", "Barras" };
+
+    List<VentasPorFecha>? datosVentas;
+    string? mensajeError;
+
+    string FormatAsUSD(object value)
+    {
+        return Convert.ToDecimal(value).ToString("C0", CultureInfo.CreateSpecificCulture("en-US"));
+    }
+
+    async Task CargarDatos()
+    {
+        try
+        {
+            cargando = true;
+            mensajeError = null;
+            StateHasChanged();
+
+            Console.WriteLine($"Cargando datos desde {fechaInicio:yyyy-MM-dd} hasta {fechaFin:yyyy-MM-dd} - Agrupación: {agrupacion}");
+            datosVentas = await VentasService.ObtenerVentasPorFechaAsync(fechaInicio, fechaFin, agrupacion);
+            Console.WriteLine($"Se obtuvieron {datosVentas?.Count ?? 0} registros");
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al cargar datos: {ex.Message}";
+            Console.WriteLine($"Error completo: {ex}");
+            datosVentas = new List<VentasPorFecha>();
+        }
+        finally
+        {
+            cargando = false;
+            StateHasChanged();
+        }
+    }
+}

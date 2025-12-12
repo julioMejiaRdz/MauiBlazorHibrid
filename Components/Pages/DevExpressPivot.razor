@@ -1,0 +1,253 @@
+@page "/dxpivot"
+@using System.Globalization
+@using MauiBlazorHibrid.Services
+@using MauiBlazorHibrid.Models
+@inject IVentasService VentasService
+@inject Radzen.NotificationService NotificationService
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h3>Análisis Pivot de Ventas - DevExpress</h3>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label>Fecha Inicio:</label>
+            <DevExpress.Blazor.DxDateEdit @bind-Date="@fechaInicio" DisplayFormat="dd/MM/yyyy" />
+        </div>
+        <div class="col-md-3">
+            <label>Fecha Fin:</label>
+            <DevExpress.Blazor.DxDateEdit @bind-Date="@fechaFin" DisplayFormat="dd/MM/yyyy" />
+        </div>
+        <div class="col-md-3">
+            <DevExpress.Blazor.DxButton Text="Cargar Datos" Click="@CargarDatos" RenderStyle="DevExpress.Blazor.ButtonRenderStyle.Primary" />
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(mensajeError))
+    {
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="alert alert-danger">@mensajeError</div>
+            </div>
+        </div>
+    }
+    else if (datosVentas == null || !datosVentas.Any())
+    {
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    No hay datos disponibles. Seleccione un rango de fechas y haga clic en "Cargar Datos".
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row mb-3">
+            <div class="col-12">
+                <h5>Pivot Grid - Total Registros: @datosVentas.Count</h5>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <DevExpress.Blazor.DxPivotGrid Data="@datosVentas"
+                             ShowColumnTotals="true"
+                             ShowColumnGrandTotals="true"
+                             ShowRowTotals="true"
+                             ShowRowGrandTotals="true">
+
+                    @* Dimensiones en filas *@
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.USUARIO)"
+                                     Caption="Vendedor"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row"
+                                     SortOrder="DevExpress.Blazor.PivotGridSortOrder.Ascending" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.DEPARTAMENTO)"
+                                     Caption="Departamento"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row"
+                                     SortOrder="DevExpress.Blazor.PivotGridSortOrder.Ascending" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.FABRICANTES)"
+                                     Caption="Fabricante"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row"
+                                     SortOrder="DevExpress.Blazor.PivotGridSortOrder.Ascending" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.CATEGORIA)"
+                                     Caption="Categoría"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row"
+                                     SortOrder="DevExpress.Blazor.PivotGridSortOrder.Ascending" />
+
+                    @* Dimensión temporal en columnas *@
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.FECHA)"
+                                     Caption="Fecha"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Column"
+                                     GroupInterval="DevExpress.Blazor.PivotGridGroupInterval.Month"
+                                     SortOrder="DevExpress.Blazor.PivotGridSortOrder.Ascending" />
+
+                    @* Métricas en el área de datos *@
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.VENTA)"
+                                     Caption="Ventas (USD)"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Data"
+                                     SummaryType="DevExpress.Blazor.PivotGridSummaryType.Sum" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.COSTO)"
+                                     Caption="Costos (USD)"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Data"
+                                     SummaryType="DevExpress.Blazor.PivotGridSummaryType.Sum" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.UTILIDAD)"
+                                     Caption="Utilidad (USD)"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Data"
+                                     SummaryType="DevExpress.Blazor.PivotGridSummaryType.Sum" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.CANTIDADES)"
+                                     Caption="Cantidad"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Data"
+                                     SummaryType="DevExpress.Blazor.PivotGridSummaryType.Sum" />
+
+                </DevExpress.Blazor.DxPivotGrid>
+            </div>
+        </div>
+
+        @* Gráfico basado en datos del pivot *@
+        <div class="row mt-4">
+            <div class="col-12">
+                <h5>Gráfico de Ventas por Mes</h5>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <DevExpress.Blazor.DxChart Data="@datosAgrupados" Width="100%">
+                    <DevExpress.Blazor.DxChartBarSeries T="VentasPorMes"
+                                                       TArgument="string"
+                                                       TValue="decimal"
+                                                       ArgumentField="vm => vm.Mes"
+                                                       ValueField="vm => vm.TotalVentas"
+                                                       Name="Ventas">
+                        <DevExpress.Blazor.DxChartSeriesLabel Visible="true" />
+                    </DevExpress.Blazor.DxChartBarSeries>
+
+                    <DevExpress.Blazor.DxChartBarSeries T="VentasPorMes"
+                                                       TArgument="string"
+                                                       TValue="decimal"
+                                                       ArgumentField="vm => vm.Mes"
+                                                       ValueField="vm => vm.TotalCostos"
+                                                       Name="Costos">
+                        <DevExpress.Blazor.DxChartSeriesLabel Visible="true" />
+                    </DevExpress.Blazor.DxChartBarSeries>
+
+                    <DevExpress.Blazor.DxChartLineSeries T="VentasPorMes"
+                                                        TArgument="string"
+                                                        TValue="decimal"
+                                                        ArgumentField="vm => vm.Mes"
+                                                        ValueField="vm => vm.TotalUtilidad"
+                                                        Name="Utilidad">
+                        <DevExpress.Blazor.DxChartSeriesLabel Visible="true" />
+                    </DevExpress.Blazor.DxChartLineSeries>
+
+                    <DevExpress.Blazor.DxChartLegend Position="DevExpress.Blazor.RelativePosition.Outside"
+                                  HorizontalAlignment="DevExpress.Blazor.HorizontalAlignment.Center"
+                                  VerticalAlignment="DevExpress.Blazor.VerticalEdge.Bottom" />
+
+                    <DevExpress.Blazor.DxChartTooltip Enabled="true" />
+                </DevExpress.Blazor.DxChart>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    bool cargando = false;
+    DateTime fechaInicio = DateTime.Now.AddMonths(-1);
+    DateTime fechaFin = DateTime.Now;
+
+    List<VentasDatos>? datosVentas;
+    List<VentasPorMes>? datosAgrupados;
+    string? mensajeError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDatos();
+    }
+
+    async Task CargarDatos()
+    {
+        try
+        {
+            cargando = true;
+            mensajeError = null;
+            StateHasChanged();
+
+            Console.WriteLine($"Cargando datos desde {fechaInicio:yyyy-MM-dd} hasta {fechaFin:yyyy-MM-dd}");
+            datosVentas = await VentasService.ObtenerVentasDetalladasAsync(fechaInicio, fechaFin);
+
+            // Agrupar por mes para el gráfico
+            AgruparDatosPorMes();
+
+            MostrarNotificacion($"Se cargaron {datosVentas?.Count ?? 0} registros");
+            Console.WriteLine($"Se obtuvieron {datosVentas?.Count ?? 0} registros");
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al cargar datos: {ex.Message}";
+            Console.WriteLine($"Error completo: {ex}");
+            datosVentas = new List<VentasDatos>();
+            datosAgrupados = new List<VentasPorMes>();
+        }
+        finally
+        {
+            cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    void AgruparDatosPorMes()
+    {
+        if (datosVentas == null || !datosVentas.Any())
+        {
+            datosAgrupados = new List<VentasPorMes>();
+            return;
+        }
+
+        datosAgrupados = datosVentas
+            .GroupBy(v => new { v.FECHA.Year, v.FECHA.Month })
+            .Select(g => new VentasPorMes
+            {
+                Mes = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMM yyyy"),
+                TotalVentas = g.Sum(v => v.VENTA),
+                TotalCostos = g.Sum(v => v.COSTO),
+                TotalUtilidad = g.Sum(v => v.UTILIDAD)
+            })
+            .OrderBy(v => v.Mes)
+            .ToList();
+    }
+
+    void MostrarNotificacion(string detalle)
+    {
+        var message = new Radzen.NotificationMessage
+        {
+            Severity = Radzen.NotificationSeverity.Success,
+            Summary = "Datos Cargados",
+            Detail = detalle,
+            Duration = 3000,
+            ShowProgress = true,
+            CloseOnClick = true
+        };
+
+        NotificationService.Notify(message);
+    }
+
+    // Clase auxiliar para el gráfico
+    public class VentasPorMes
+    {
+        public string Mes { get; set; } = string.Empty;
+        public decimal TotalVentas { get; set; }
+        public decimal TotalCostos { get; set; }
+        public decimal TotalUtilidad { get; set; }
+    }
+}
