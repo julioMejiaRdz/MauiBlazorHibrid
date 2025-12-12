@@ -1,12 +1,18 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
+<RadzenTheme Theme="material" />
+<RadzenComponents />
+
+<div class="page" id="app-container">
+    <div class="sidebar" id="sidebar">
         <NavMenu />
     </div>
 
     <main>
         <div class="top-row px-4">
+            <label for="nav-toggle" class="menu-icon" title="Toggle menu">
+                <span class="hamburger-icon"></span>
+            </label>
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
         </div>
 
@@ -15,3 +21,21 @@
         </article>
     </main>
 </div>
+
+<script>
+    // Escuchar cambios en el checkbox para mostrar/ocultar el sidebar
+    document.addEventListener('DOMContentLoaded', function() {
+        const navToggle = document.getElementById('nav-toggle');
+        const sidebar = document.getElementById('sidebar');
+
+        if (navToggle && sidebar) {
+            navToggle.addEventListener('change', function() {
+                if (this.checked) {
+                    sidebar.style.left = '0';
+                } else {
+                    sidebar.style.left = '-100%';
+                }
+            });
+        }
+    });
+</script>

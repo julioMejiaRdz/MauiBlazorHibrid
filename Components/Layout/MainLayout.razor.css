@@ -19,6 +19,7 @@ main {
     height: 3.5rem;
     display: flex;
     align-items: center;
+    position: relative;
 }
 
     .top-row ::deep a, .top-row ::deep .btn-link {
@@ -36,13 +37,67 @@ main {
         text-overflow: ellipsis;
     }
 
+/* Icono de menú hamburguesa */
+.menu-icon {
+    display: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    margin-right: auto;
+    z-index: 1001;
+}
+
+.hamburger-icon {
+    display: block;
+    width: 25px;
+    height: 2px;
+    background-color: #333;
+    position: relative;
+    transition: background-color 0.3s;
+}
+
+.hamburger-icon::before,
+.hamburger-icon::after {
+    content: '';
+    display: block;
+    width: 25px;
+    height: 2px;
+    background-color: #333;
+    position: absolute;
+    transition: transform 0.3s;
+}
+
+.hamburger-icon::before {
+    top: -8px;
+}
+
+.hamburger-icon::after {
+    top: 8px;
+}
+
 @media (max-width: 640.98px) {
+    .menu-icon {
+        display: block;
+    }
+
     .top-row {
         justify-content: space-between;
     }
 
     .top-row ::deep a, .top-row ::deep .btn-link {
         margin-left: 0;
+    }
+}
+
+/* Sidebar oculto por defecto en móviles */
+@media (max-width: 640.98px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -100%;
+        width: 250px;
+        height: 100vh;
+        z-index: 1000;
+        transition: left 0.3s ease-in-out;
     }
 }
 
@@ -73,5 +128,10 @@ main {
     .top-row, article {
         padding-left: 2rem !important;
         padding-right: 1.5rem !important;
+    }
+
+    /* Ocultar el botón de menú en escritorio */
+    .menu-icon {
+        display: none !important;
     }
 }
