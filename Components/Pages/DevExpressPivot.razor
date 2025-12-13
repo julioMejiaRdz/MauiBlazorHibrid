@@ -49,51 +49,81 @@
         <div class="row mb-3">
             <div class="col-12">
                 <h5>Pivot Grid - Total Registros: @datosVentas.Count</h5>
+                <p class="text-muted small">Arrastra los headers de columna (↕️) para reorganizar los campos entre áreas (Filas, Columnas, Datos)</p>
             </div>
         </div>
 
         <div class="row">
             <div class="col-12">
-                <DevExpress.Blazor.DxPivotGrid Data="@datosVentas"
+                <DevExpress.Blazor.DxPivotGrid @ref="pivotGrid"
+                             Data="@datosVentas"
                              ShowColumnTotals="true"
                              ShowColumnGrandTotals="true"
                              ShowRowTotals="true"
                              ShowRowGrandTotals="true">
 
-                    @* Dimensiones en filas *@
-                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.USUARIO)"
-                                     Caption="Vendedor"
-                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row"
-                                     SortOrder="DevExpress.Blazor.PivotGridSortOrder.Ascending" />
-
-                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.DEPARTAMENTO)"
-                                     Caption="Departamento"
-                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row"
-                                     SortOrder="DevExpress.Blazor.PivotGridSortOrder.Ascending" />
-
-                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.FABRICANTES)"
-                                     Caption="Fabricante"
-                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row"
-                                     SortOrder="DevExpress.Blazor.PivotGridSortOrder.Ascending" />
-
-                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.CATEGORIA)"
-                                     Caption="Categoría"
-                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row"
-                                     SortOrder="DevExpress.Blazor.PivotGridSortOrder.Ascending" />
-
-                    @* Dimensión temporal en columnas *@
-                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.FECHA)"
-                                     Caption="Fecha"
-                                     Area="DevExpress.Blazor.PivotGridFieldArea.Column"
-                                     GroupInterval="DevExpress.Blazor.PivotGridGroupInterval.Month"
-                                     SortOrder="DevExpress.Blazor.PivotGridSortOrder.Ascending" />
-
-                    @* Métricas en el área de datos *@
+                    @* Campo de datos principal - VENTA *@
                     <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.VENTA)"
                                      Caption="Ventas (USD)"
                                      Area="DevExpress.Blazor.PivotGridFieldArea.Data"
                                      SummaryType="DevExpress.Blazor.PivotGridSummaryType.Sum" />
 
+                    @* Dimensiones en columnas - temporal *@
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.FECHA)"
+                                     Caption="Fecha"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Column"
+                                     GroupInterval="DevExpress.Blazor.PivotGridGroupInterval.Month" />
+
+                    @* Campos de dimensión disponibles para arrastrar *@
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.USUARIO)"
+                                     Caption="Vendedor"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.DEPARTAMENTO)"
+                                     Caption="Departamento"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.FABRICANTES)"
+                                     Caption="Fabricante"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.CATEGORIA)"
+                                     Caption="Categoría Cliente"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.REPRESENTANTE)"
+                                     Caption="Representante"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.CLIENTE)"
+                                     Caption="Cliente"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.PRODFAMILIA)"
+                                     Caption="Familia Producto"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.RUBRO)"
+                                     Caption="Rubro Cliente"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.SECTOR_CLIENTE)"
+                                     Caption="Sector Cliente"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.CODIGO)"
+                                     Caption="Código Producto"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.DESCRIPCION)"
+                                     Caption="Descripción Producto"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row" />
+
+                    <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.DOCNUM)"
+                                     Caption="Número Documento"
+                                     Area="DevExpress.Blazor.PivotGridFieldArea.Row" />
+
+                    @* Otros campos de datos disponibles *@
                     <DevExpress.Blazor.DxPivotGridField Field="@nameof(VentasDatos.COSTO)"
                                      Caption="Costos (USD)"
                                      Area="DevExpress.Blazor.PivotGridFieldArea.Data"
@@ -162,6 +192,7 @@
 </div>
 
 @code {
+    DevExpress.Blazor.DxPivotGrid<VentasDatos>? pivotGrid;
     bool cargando = false;
     DateTime fechaInicio = DateTime.Now.AddMonths(-1);
     DateTime fechaFin = DateTime.Now;
